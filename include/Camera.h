@@ -1,48 +1,69 @@
 #include <Arduino.h>
-#include <Wire.h>
+#include <SPI.h>
+
 
 class Camera
 {
+private:
+  int CHAR_BUF = 128;
+  // char buff[128] = {0};
+  int ss_pin = 34;
+  int len = 0;
+  int32_t temp = 0;
+  elapsedMillis tm;
+  unsigned long long lst_tm = 0;
+  int fps = 10;
 public:
-  Camera();
+  Camera (elapsedMillis &tm) : tm(tm) {}
   void init();
   void read();
+  bool update = false;
+  char buff[128] = {0};
+  bool ball_visible = 0;
+  double ball_angle = 0;
+  double ball_dist = 0;
 };
 
 void Camera::init()
 {
-  Wire.begin();
+  pinMode(ss_pin, OUTPUT);
+  SPI1.begin();
+  SPI1.setBitOrder(MSBFIRST);
+  SPI1.setClockDivider(SPI_CLOCK_DIV16);
+  SPI1.setDataMode(SPI_MODE0);
 }
 
 void Camera::read()
 {
-  int32_t temp = 0;
-  char buff[128] = {0};
-
-  Wire.requestFrom(0x12, 2);
-  if (Wire.available() == 2)
-  { // got length?
-
-    temp = Wire.read() | (Wire.read() << 8);
-    delay(1); // Give some setup time...
-
-    Wire.requestFrom(0x12, temp);
-    if (Wire.available() == temp)
-    { // got full message?
-
-      temp = 0;
-      while (Wire.available())
-        buff[temp++] = Wire.read();
-    }
-    else
-    {
-      while (Wire.available())
-        Wire.read(); // Toss garbage bytes.
-    }
-  }
-  else
+  update = false;
+  if (lst_tm < tm)
   {
-    while (Wire.available())
-      Wire.read(); // Toss garbage bytes.
+    temp = 0;
+    len = 0;
+    for (int i = 0; i < 128; i++)
+      buff[i] = 0;
+
+    digitalWrite(ss_pin, LOW);
+    delay(1);
+
+    if(SPI1.transfer(1) == 85) {
+      SPI1.transfer(&len, 4);
+      if (len) {
+        SPI1.transfer(&buff, min(len, CHAR_BUF));
+        len -= min(len, CHAR_BUF);
+      }
+      while (len--) SPI1.transfer(0);
+      update = true;
+    }
+
+    digitalWrite(ss_pin, HIGH);
+
+
+
+    ball_visible = bool(buff[0]);
+    ball_angle = atoi('123');
+    ball_dist = atoi(buff[5] + buff[6] + buff[7]);
+
+    lst_tm = tm + 1000 / fps;
   }
 }

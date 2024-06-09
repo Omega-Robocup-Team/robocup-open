@@ -25,7 +25,11 @@ private:
       7,
       15,
   };
-  int grey[16] = {422, 256, 289, 395, 322, 436, 260, 295, 380, 319, 307, 407, 431, 296, 255, 326};
+  int grey[2][16] = {
+    {422, 256, 289, 395, 322, 436, 260, 295, 380, 319, 307, 407, 431, 296, 255, 326},
+    {67, 39, 38, 56, 31, 71, 47, 56, 63, 52, 50, 67, 70, 53, 46, 50}
+  };
+
   // int grey[16] = {231, 136, 149, 213, 170, 230, 137, 169, 216, 178, 124, 120, 219, 149, 127, 151};
   double coord[16][2] = {
       {0.0, 1.0},
@@ -77,9 +81,8 @@ void Line::read()
   {
     for (int j = 0; j < 4; j++)
       digitalWrite(digital[j], bitRead(i, (3 - j)));
-    delay(1);
     val[index[i]] = analogRead(analog);
-    bin[index[i]] = val[index[i]] > grey[index[i]];
+    bin[index[i]] = val[index[i]] > grey[ROBOT][index[i]];
     if (bin[index[i]])
       detect_tm = tm + 100;
   }
@@ -154,7 +157,7 @@ void Line::colibration(Motor &motor, Gyro &gyro, Buttons &buttons, Adafruit_NeoP
     }
 
     pixels.setPixelColor(0, pixels.Color(0, 0, 0));
-    Serial.print('{');
+
     for (int i = 0; i < 16; i++)
     {
       if (max_val[i] < val[i])
@@ -167,11 +170,39 @@ void Line::colibration(Motor &motor, Gyro &gyro, Buttons &buttons, Adafruit_NeoP
         min_val[i] = val[i];
         pixels.setPixelColor(0, pixels.Color(100, 100, 100));
       }
-      grey[i] = (max_val[i] + min_val[i]) / 2.0;
-      Serial.print(grey[i]);
+      grey[ROBOT][i] = (max_val[i] + min_val[i]) / 2.0;
+    }
+
+    Serial.print("grey = {");
+    for (int i = 0; i < 16; i++)
+    {
+      Serial.print(grey[ROBOT][i]);
       Serial.print(i == 16 ? "" : ", ");
     }
     Serial.println("};");
+
+    Serial.print("green = {");
+    double avg_green = 0;
+    for (int i = 0; i < 16; i++)
+    {
+      Serial.print(min_val[i]);
+      Serial.print(i == 16 ? "" : ", ");
+      avg_green += min_val[i];
+    }
+    avg_green /= 16.0;
+    Serial.println("};");
+
+    Serial.print("avg_green = ");
+    Serial.println(avg_green);
+
+    Serial.print("white = {");
+    for (int i = 0; i < 16; i++)
+    {
+      Serial.print(max_val[i]);
+      Serial.print(i == 16 ? "" : ", ");
+    }
+    Serial.println("};");
+
     pixels.show();
     buttons.read();
 

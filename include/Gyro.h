@@ -15,6 +15,8 @@ public:
   double angle = 0, lst_angle = 0, turn = 0;
   void init();
   void read();
+  double get_abs_angle(double);
+  double get_abs_turn(double, int);
 };
 
 void Gyro::init()
@@ -35,7 +37,16 @@ void Gyro::read()
     mpu->dmpGetQuaternion(&q, fifoBuffer);
     mpu->dmpGetYawPitchRoll(ypr, &q, &gravity);
     angle = ypr[0] * 180 / M_PI;
-    turn = constrain(angle * 2 + (angle - lst_angle) * 1, -150, 150) * -1;
     lst_angle = angle;
   }
+}
+
+void Gyro::get_abs_angle(double angle_data)
+{
+  return angle_data - angle;
+}
+
+double Gyro::get_turn(int max_speed = 150)
+{
+  turn = constrain(angle * 2 + (angle - lst_angle) * 1, -max_speed, max_speed) * -1;
 }
