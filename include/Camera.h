@@ -6,22 +6,19 @@ class Camera
 {
 private:
   int CHAR_BUF = 128;
-  // char buff[128] = {0};
   int ss_pin = 34;
   int len = 0;
   int32_t temp = 0;
   elapsedMillis tm;
   unsigned long long lst_tm = 0;
-  int fps = 10;
+  int fps = 20;
 public:
   Camera (elapsedMillis &tm) : tm(tm) {}
   void init();
   void read();
-  bool update = false;
   char buff[128] = {0};
-  bool ball_visible = 0;
-  double ball_angle = 0;
-  double ball_dist = 0;
+  int data[30] = {0};
+  bool update = false;
 };
 
 void Camera::init()
@@ -40,29 +37,29 @@ void Camera::read()
   {
     temp = 0;
     len = 0;
-    for (int i = 0; i < 128; i++)
+    for (int i = 0; i < CHAR_BUF; i++)
       buff[i] = 0;
 
     digitalWrite(ss_pin, LOW);
     delay(1);
 
-    if(SPI1.transfer(1) == 85) {
+    if (SPI1.transfer(1) == 85)
+    {
       SPI1.transfer(&len, 4);
-      if (len) {
+      if (len)
+      {
         SPI1.transfer(&buff, min(len, CHAR_BUF));
         len -= min(len, CHAR_BUF);
       }
-      while (len--) SPI1.transfer(0);
-      update = true;
+      while (len--)
+        SPI1.transfer(0);
+      this->update = true;
     }
 
     digitalWrite(ss_pin, HIGH);
 
-
-
-    ball_visible = bool(buff[0]);
-    ball_angle = atoi('123');
-    ball_dist = atoi(buff[5] + buff[6] + buff[7]);
+    for (int i = 0; i < 30; i++)
+      data[i] = buff[i] - 48;
 
     lst_tm = tm + 1000 / fps;
   }

@@ -23,6 +23,7 @@ Motor motor;
 Buttons buttons(motor.stop_flag);
 Line line(tm);
 Camera camera(tm);
+Object ball(gyro);
 
 void setup()
 {
@@ -65,11 +66,12 @@ void loop()
   line.calculate();
   camera.read();
 
+  ball.decodeArray(camera.data, 0);
+
   pixels.setPixelColor(0, motor.stop_flag ? pixels.Color(0, 0, 0) : pixels.Color(0, 50, 0));
   pixels.setPixelColor(1, line.detected ? pixels.Color(50, 50, 50) : pixels.Color(0, 50, 0));
   pixels.setPixelColor(2, camera.update ? pixels.Color(0, 50, 0) : pixels.Color(0, 0, 0));
   pixels.show();
-
 
   if (tm > tm_buf)
   {
@@ -89,15 +91,21 @@ void loop()
     // Serial.print(line.angle);
     // Serial.print("\t");
     // Serial.print(line.distance);
-    Serial.print(camera.buff);
-    Serial.println();
+    // Serial.print(camera.buff);
+    // Serial.println();
 
-    Serial.print(camera.ball_visible);
-    Serial.print(' ');
-    Serial.print(camera.ball_angle);
-    Serial.print(' ');
-    Serial.println(camera.ball_dist);
-    Serial.println();
+    // for (int i = 0; i < 30; i++)
+    // {
+    //   Serial.print(camera.data[i]);
+    //   Serial.print(" ");
+    // }
+
+    // Serial.print(ball.visible);
+    // Serial.print(' ');
+    // Serial.print(ball.abs_angle);
+    // Serial.print(' ');
+    // Serial.println(ball.turn_angle);
+
     tm_buf = tm + 100;
   }
 
@@ -113,12 +121,28 @@ void loop()
   //   motor.direction = line.reverse;
   // }
 
+  motor.correction = ball.getTurn(100);
+
   motor.dribble(0);
   motor.run();
+
+  Serial.println(ball.turn_angle);
 
   // delay(((unsigned long long)tm - main_start_time) < main_delay ? main_delay - ((unsigned long long)tm - main_start_time) : 0);
   delay(10);
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 // #include <SPI.h>
 // #define SS_PIN 34
@@ -145,17 +169,17 @@ void loop()
 //    digitalWrite(SS_PIN, LOW);
 //   delay(1); // Give the OpenMV Cam some time to setup to send data.
 
-//   if (SPI1.transfer(1) == 85)
-//   {                         // saw sync char?
-//     SPI1.transfer(&len, 4); // get length
-//     if (len)
-//     {
-//       SPI1.transfer(&buff, min(len, CHAR_BUF));
-//       len -= min(len, CHAR_BUF);
-//     }
-//     while (len--)
-//       SPI1.transfer(0); // eat any remaining bytes
-//   }
+  // if (SPI1.transfer(1) == 85)
+  // {                         // saw sync char?
+  //   SPI1.transfer(&len, 4); // get length
+  //   if (len)
+  //   {
+  //     SPI1.transfer(&buff, min(len, CHAR_BUF));
+  //     len -= min(len, CHAR_BUF);
+  //   }
+  //   while (len--)
+  //     SPI1.transfer(0); // eat any remaining bytes
+  // }
 
 //    digitalWrite(SS_PIN, HIGH);
 //   Serial.println(buff);
