@@ -10,6 +10,7 @@ public:
     void dribble(int);
     int direction = 0, speed = 0, correction = 0;
     bool stop_flag = 0;
+    bool stop_dribble = 0;
 
 private:
     int MOTOR[4][2] = {{3, 2}, {5, 4}, {7, 6}, {9, 8}};
@@ -82,6 +83,14 @@ void Motor::run()
 
 void Motor::dribble(int sp)
 {
-    analogWrite(DRIB[1], sp);
-    analogWrite(DRIB[0], 0);
+    if (!stop_dribble)
+    {
+        analogWrite(DRIB[1], sp);
+        analogWrite(DRIB[0], 0);
+    }
+    else
+    {
+        analogWrite(DRIB[1], 0);
+        analogWrite(DRIB[0], 0);
+    }
 }

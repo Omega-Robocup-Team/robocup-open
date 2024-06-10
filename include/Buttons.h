@@ -6,9 +6,10 @@ private:
   int pin[4] = {A0, A1, A2, A3};
   bool press_flag[4] = {0, 0, 0, 0};
   bool stop[4] = {1, 0, 0, 0};
-  bool &motor_stop;
+  Motor &motor;
+  Kicker &kicker;
 public:
-  Buttons(bool &motor_stop): motor_stop(motor_stop) {}
+  Buttons(Motor &motor, Kicker &kicker): motor(motor), kicker(kicker) {}
   bool val[4] = {0, 0, 0, 0};
   bool press[4] = {0, 0, 0, 0};
   void init();
@@ -49,10 +50,22 @@ void Buttons::read()
       press_flag[i] = 0;
       press[i] = 0;
     }
-
-    if (press[i])
-    {
-      motor_stop = !motor_stop;
-    }
   }
+
+  if (press[0])
+    motor.stop_flag = !motor.stop_flag;
+
+  if (press[1])
+    motor.stop_dribble = !motor.stop_dribble;
+  
+  if (press[2])
+    kicker.forse_kick();
+  
+  if (press[3])
+  {
+    kicker.begin_if_null = !kicker.begin_if_null;
+    if (!kicker.begin_if_null)
+      kicker.current_state = 0;
+  }
+  
 }
