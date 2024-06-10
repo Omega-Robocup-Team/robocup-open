@@ -1,4 +1,6 @@
-#define ROBOT 1
+#define ROBOT 1 // 0 - goalkeeper, 1 - forward (номер робота)
+#define GOAL 1  // 0 - blue, 1 - yellow (ворота в которые мы играем)
+#define ROLE 1  // 0 - goalkeeper, 1 - forward (роль игрока)
 
 #include <Arduino.h>
 #include <Adafruit_NeoPixel.h>
@@ -61,7 +63,8 @@ void setup()
   // delay(10000);
 
   motor.stop_flag = 1;
-  motor.stop_dribble = 1;
+  motor.stop_dribble = 0;
+  kicker.begin_if_null = 1;
 }
 
 void loop()
@@ -125,117 +128,85 @@ void loop()
     tm_buf = tm + 100;
   }
 
-  // if (!line.detected)
-  // {
-  //   motor.speed = 150;
-  //   motor.correction = 0;
-  //   motor.direction = -gyro.angle;
-  // }
-  // else
-  // {
-  //   motor.speed = 100;
-  //   motor.direction = line.reverse;
-  // }
-
-  if (emitter.captured)
+  if (ROLE == 1) // forward ------------------------------------------------------------------------
   {
-    if (abs(gyro.angle) < 10 && kicker.current_state == 2)
+    Object goal = GOAL ? blue_goal : yellow_goal;
+    // if (!line.detected)
+    // {
+    //   motor.speed = 150;
+    //   motor.correction = 0;
+    //   motor.direction = -gyro.angle;
+    // }
+    // else
+    // {
+    //   motor.speed = 100;
+    //   motor.direction = line.reverse;
+    // }
+
+    if (emitter.captured)
     {
-      motor.direction = 0;
-      motor.speed = 255;
-      motor.correction = 0;
-      motor.run();
-      motor.dribble(0);
-      delay(300);
-      kicker.execute = true;
-      kicker.handle();
-      motor.speed = 0;
-      motor.run();
-      delay(300);
-      emitter.capture_tm = 0;
+      if (abs(gyro.angle) < 10 && kicker.current_state == 2)
+      {
+        motor.direction = 0;
+        motor.speed = 255;
+        motor.correction = 0;
+        motor.run();
+        motor.dribble(0);
+        delay(200);
+        kicker.execute = true;
+        kicker.handle();
+        delay(100);
+        motor.speed = 0;
+        motor.run();
+        motor.dribble(0);
+        delay(300);
+        emitter.capture_tm = 0;
+      }
+      else
+      {
+        motor.correction = constrain(gyro.turn, -30, 30);
+        motor.speed = 0;
+        motor.direction = 0;
+        motor.run();
+        motor.dribble(255);
+      }
+    }
+    else if (ball.lst_tm_visible + 500 > tm)
+    {
+      motor.correction = ball.getTurn(50);
+      motor.direction = ball.turn_angle;
+      motor.speed = ball.distance < 60 ? 50 : 100;
+      motor.dribble(ball.distance < 60 ? 255 : 0);
     }
     else
     {
-      motor.correction = constrain(gyro.turn, -30, 30);
-      motor.speed = 0;
+      motor.correction = gyro.turn;
       motor.direction = 0;
-      motor.run();
-      motor.dribble(255);
+      motor.speed = 0;
+      motor.dribble(0);
     }
   }
-  else if (ball.lst_tm_visible + 500 > tm)
+  else // goalkeeper -------------------------------------------------------------------------------
   {
-    motor.correction = ball.getTurn(50);
-    motor.direction = ball.turn_angle;
-    motor.speed = ball.distance < 60 ? 50 : 100;
-    motor.dribble(ball.distance < 60 ? 255 : 0);
-  }
-  else
-  {
-    motor.correction = gyro.turn;
-    motor.direction = 0;
-    motor.speed = 0;
-    motor.dribble(0);
+    Object goal = GOAL ? yellow_goal : blue_goal;
+
+    // if (ball.lst_tm_visible + 500 > tm)
+    // {
+    //   motor.direction = ball.turn_angle > 0 ? 90 : -90;
+    //   motor.speed = abs(ball.turn_angle) < 10 ? 100 : 200;
+    //   motor.dribble(0);
+    // }
+    // else
+    // {
+    //   motor.direction = 0;
+    //   motor.dribble(0);
+    // }
+
+    double x_speed = 0;
+    double y_speed = 0;
   }
 
-  // motor.correction = yellow_goal.getTurn(50);
-
-  // motor.dribble(ball.distance < 150 ? 255 : 0);
   motor.run();
   // delay(((unsigned long long)tm - main_start_time) < main_delay ? main_delay - ((unsigned long long)tm - main_start_time) : 0);
   delay(10);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-// #include <SPI.h>
-// #define SS_PIN 34
-// #define BAUD_RATE 19200
-// #define CHAR_BUF 128
-
-// void setup()
-// {
-//    pinMode(SS_PIN, OUTPUT);
-//   pinMode(LED_BUILTIN, OUTPUT);
-//   digitalWrite(LED_BUILTIN, HIGH);
-//   Serial.begin(BAUD_RATE);
-//   SPI1.begin();
-//   SPI1.setBitOrder(MSBFIRST);
-//   SPI1.setClockDivider(SPI_CLOCK_DIV16);
-//   SPI1.setDataMode(SPI_MODE0);
-//   delay(1000); // Give the OpenMV Cam time to bootup.
-// }
-
-// void loop()
-// {
-//   int32_t len = 0;
-//   char buff[CHAR_BUF] = {0};
-//    digitalWrite(SS_PIN, LOW);
-//   delay(1); // Give the OpenMV Cam some time to setup to send data.
-
-  // if (SPI1.transfer(1) == 85)
-  // {                         // saw sync char?
-  //   SPI1.transfer(&len, 4); // get length
-  //   if (len)
-  //   {
-  //     SPI1.transfer(&buff, min(len, CHAR_BUF));
-  //     len -= min(len, CHAR_BUF);
-  //   }
-  //   while (len--)
-  //     SPI1.transfer(0); // eat any remaining bytes
-  // }
-
-//    digitalWrite(SS_PIN, HIGH);
-//   Serial.println(buff);
-//   delay(1); // Don't loop to quickly.
-// }
