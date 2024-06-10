@@ -81,6 +81,7 @@ void loop()
 
   ball.decodeArray(camera.data, 0);
   yellow_goal.decodeArray(camera.data, 10);
+  blue_goal.decodeArray(camera.data, 20);
 
   pixels.setPixelColor(0, motor.stop_flag ? pixels.Color(0, 0, 0) : pixels.Color(0, 20, 0));
   pixels.setPixelColor(1, line.detected ? pixels.Color(20, 20, 20) : pixels.Color(0, 20, 0));
