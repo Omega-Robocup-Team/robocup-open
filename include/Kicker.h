@@ -64,7 +64,7 @@ void Kicker::handle() // если цикл удара был поставлен 
   }
   if ((current_state == 2) && (getChrg() < 90))
   {
-    Serial.println("aoaooa");
+    // Serial.println("aoaooa");
     current_state = 1;
   }
 

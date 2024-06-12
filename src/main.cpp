@@ -91,6 +91,7 @@ void loop()
 
   if (tm > tm_buf)
   {
+    Serial.print(kicker.getChrg());
     // for (int i = 0; i < 16; i++)
     // {
     //   Serial.print(line.val[i]);
@@ -108,7 +109,7 @@ void loop()
     // Serial.print("\t");
     // Serial.print(line.distance);
     // Serial.print(camera.buff);
-    // Serial.println();
+    Serial.println();
 
     // for (int i = 0; i < 30; i++)
     // {
@@ -116,22 +117,22 @@ void loop()
     //   Serial.print(" ");
     // }
 
-    Serial.print(ball.visible);
-    Serial.print(" ");
-    Serial.print(ball.angle);
-    Serial.print(" ");
-    Serial.print(ball.distance);
-    Serial.print(" ");
-    Serial.print(ball.abs_angle);
-    Serial.print(" ");
-    Serial.println(ball.turn_angle);
+    // Serial.print(ball.visible);
+    // Serial.print(" ");
+    // Serial.print(ball.angle);
+    // Serial.print(" ");
+    // Serial.print(ball.distance);
+    // Serial.print(" ");
+    // Serial.print(ball.abs_angle);
+    // Serial.print(" ");
+    // Serial.println(ball.turn_angle);
 
     tm_buf = tm + 100;
   }
 
   if (ROLE == 1) // forward ------------------------------------------------------------------------
   {
-    Object goal = GOAL ? blue_goal : yellow_goal;
+    Object goal = GOAL ? yellow_goal : blue_goal;
     // if (!line.detected)
     // {
     //   motor.speed = 150;
@@ -146,38 +147,66 @@ void loop()
 
     if (emitter.captured)
     {
-      if (abs(gyro.angle) < 10 && kicker.current_state == 2)
+      double turn_angle = gyro.angle;
+      double turn = gyro.turn;
+      // if (goal.lst_tm_visible + 500 > tm)
+      // {
+      //   turn_angle = goal.turn_angle;
+      //   turn = goal.turn;
+      // }
+
+      if (abs(turn_angle) < 10 && kicker.current_state == 2)
       {
         motor.direction = 0;
-        motor.speed = 255;
         motor.correction = 0;
-        motor.run();
-        motor.dribble(0);
-        delay(200);
-        kicker.execute = true;
-        kicker.handle();
-        delay(100);
         motor.speed = 0;
         motor.run();
+        motor.dribble(150);
+        delay(500);
+        motor.direction = 0;
+        motor.speed = 200;
+        motor.correction = 0;
+        motor.run();
+        motor.dribble(255);
+        for (int i = 0; i < 50; i++)
+        {
+          emitter.read();
+          if (emitter.raw_val)
+          {
+            kicker.execute = true;
+            kicker.handle();
+            break;
+          }
+          delay(10);
+        }
+        motor.speed = 0;
         motor.dribble(0);
-        delay(300);
         emitter.capture_tm = 0;
       }
-      else
+      else if (emitter.ready_for_turn)
       {
-        motor.correction = constrain(gyro.turn, -30, 30);
+        motor.correction = constrain(turn * 1.5, -30, 30);
         motor.speed = 0;
         motor.direction = 0;
         motor.run();
         motor.dribble(255);
       }
+      else
+      {
+        motor.correction = 0;
+        motor.speed = 0;
+        motor.direction = 0;
+        motor.run();
+        motor.dribble(150);
+      }
     }
     else if (ball.lst_tm_visible + 500 > tm)
     {
       motor.correction = ball.getTurn(50);
-      motor.direction = ball.turn_angle;
-      motor.speed = ball.distance < 60 ? 50 : 100;
-      motor.dribble(ball.distance < 60 ? 255 : 0);
+      // motor.direction = ball.turn_angle;
+      motor.direction = 0;
+      motor.speed = ball.distance < 60 ? 50 : 150;
+      motor.dribble(ball.distance < 60 ? 150 : 0);
     }
     else
     {

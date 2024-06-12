@@ -14,6 +14,7 @@ public:
   bool state = 0;
   bool captured = 0;
   bool ready_for_turn = 0;
+  bool raw_val = 0;
   unsigned long long capture_tm = 0;
 };
 
@@ -24,7 +25,8 @@ void Emitter::init()
 
 void Emitter::read()
 {
-  if (analogRead(pin) > 1000)
+  raw_val = analogRead(pin) > 1000;
+  if (raw_val)
     capture_tm = tm + 200;
   captured = capture_tm > tm;
   if (captured && first_capture)
