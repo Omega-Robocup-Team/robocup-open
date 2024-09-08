@@ -1,242 +1,76 @@
 #define ROBOT 1 // 0 - goalkeeper, 1 - forward (номер робота)
 #define GOAL 1  // 0 - blue, 1 - yellow (ворота в которые мы играем)
-#define ROLE 1  // 0 - goalkeeper, 1 - forward (роль игрока)
+#define ROLE 0  // 0 - goalkeeper, 1 - forward (роль игрока)
 
 #include <Arduino.h>
-#include <Adafruit_NeoPixel.h>
-#include "Gyro.h"
-#include "Motor.h"
-#include "Kicker.h"
-#include "Buttons.h"
-#include "Line.h"
-#include "Object.h"
-#include "Camera.h"
-#include "Emitter.h"
+#include "Modules/Functions.h"
+#include "Robot.h"
+#include "Robot.cpp"
+#include "Modules/Tactics.h"
 
-#define PINPIXELS 33
-#define NUMPIXELS 8
-
-unsigned long long tm_buf = 0;
-elapsedMillis tm;
-int main_delay = 10;
-unsigned long long main_start_time = 0;
-
-Adafruit_NeoPixel pixels(NUMPIXELS, PINPIXELS, NEO_GRB + NEO_KHZ800);
-Gyro gyro;
-Motor motor;
-Kicker kicker;
-Buttons buttons(motor, kicker);
-Line line(tm);
-Camera camera(tm);
-Object ball(gyro, tm);
-Object yellow_goal(gyro, tm);
-Object blue_goal(gyro, tm);
-Emitter emitter(tm);
+void logging();
 
 void setup()
 {
-  pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, HIGH);
-  Serial.begin(9600);
+  robot.init();
 
-  pixels.begin();
-  for (int i = 0; i < NUMPIXELS; i++)
-    pixels.setPixelColor(i, pixels.Color(20, 20, 20));
-  pixels.show();
-  motor.init();
-  buttons.init();
-  emitter.init();
-  kicker.init();
-  camera.init();
-  gyro.init();
-  for (int i = 0; i < 50; i++)
-  {
-    digitalWrite(LED_BUILTIN, i % 2);
-    delay(100);
-  }
-  line.init();
-  for (int i = 0; i < NUMPIXELS; i++)
-    pixels.setPixelColor(i, pixels.Color(0, 0, 0));
-  pixels.show();
-
-  // line.colibration(motor, gyro, buttons, pixels, tm, tm_buf);
-  // delay(10000);
-
-  motor.stop_flag = 1;
-  motor.stop_dribble = 0;
-  kicker.begin_if_null = 1;
+  robot.set_turn_speed_limit(50);
+  robot.set_speed_limit(70);
 }
 
 void loop()
 {
-  main_start_time = tm;
+  robot.read();
 
-  gyro.read();
-  buttons.read();
-  emitter.read();
-  line.read();
-  line.calculate();
-  camera.read();
-  kicker.handle();
-
-  ball.decodeArray(camera.data, 0);
-  yellow_goal.decodeArray(camera.data, 10);
-  blue_goal.decodeArray(camera.data, 20);
-
-  pixels.setPixelColor(0, motor.stop_flag ? pixels.Color(0, 0, 0) : pixels.Color(0, 20, 0));
-  pixels.setPixelColor(1, line.detected ? pixels.Color(20, 20, 20) : pixels.Color(0, 20, 0));
-  pixels.setPixelColor(2, camera.update ? (ball.visible ? pixels.Color(0, 20, 0) : pixels.Color(20, 20, 20)) : pixels.Color(0, 0, 0));
-  pixels.setPixelColor(3, kicker.getChrg() > 90 ? pixels.Color(0, 20, 0) : (kicker.begin_if_null ? pixels.Color(20, 20, 20) : pixels.Color(0, 0, 0)));
-  pixels.show();
-
-  if (tm > tm_buf)
+  if (ROLE)
   {
-    Serial.print(kicker.getChrg());
-    // for (int i = 0; i < 16; i++)
-    // {
-    //   Serial.print(line.val[i]);
-    //   // Serial.print(':');
-    //   // Serial.print(line.bin[i]);
-    //   Serial.print("\t");
-    // }
-    // Serial.print(line.detected);
-    // Serial.print("\t");
-    // Serial.print(line.x);
-    // Serial.print("\t");
-    // Serial.print(line.y);
-    // Serial.print("\t");
-    // Serial.print(line.angle);
-    // Serial.print("\t");
-    // Serial.print(line.distance);
-    // Serial.print(camera.buff);
-    Serial.println();
-
-    // for (int i = 0; i < 30; i++)
-    // {
-    //   Serial.print(camera.data[i]);
-    //   Serial.print(" ");
-    // }
-
-    // Serial.print(ball.visible);
-    // Serial.print(" ");
-    // Serial.print(ball.angle);
-    // Serial.print(" ");
-    // Serial.print(ball.distance);
-    // Serial.print(" ");
-    // Serial.print(ball.abs_angle);
-    // Serial.print(" ");
-    // Serial.println(ball.turn_angle);
-
-    tm_buf = tm + 100;
-  }
-
-  if (ROLE == 1) // forward ------------------------------------------------------------------------
-  {
-    Object goal = GOAL ? yellow_goal : blue_goal;
-    // if (!line.detected)
-    // {
-    //   motor.speed = 150;
-    //   motor.correction = 0;
-    //   motor.direction = -gyro.angle;
-    // }
-    // else
-    // {
-    //   motor.speed = 100;
-    //   motor.direction = line.reverse;
-    // }
-
-    if (emitter.captured)
+    if (ball.is_visible(500))
     {
-      double turn_angle = gyro.angle;
-      double turn = gyro.turn;
-      // if (goal.lst_tm_visible + 500 > tm)
-      // {
-      //   turn_angle = goal.turn_angle;
-      //   turn = goal.turn;
-      // }
-
-      if (abs(turn_angle) < 10 && kicker.current_state == 2)
-      {
-        motor.direction = 0;
-        motor.correction = 0;
-        motor.speed = 0;
-        motor.run();
-        motor.dribble(150);
-        delay(500);
-        motor.direction = 0;
-        motor.speed = 200;
-        motor.correction = 0;
-        motor.run();
-        motor.dribble(255);
-        for (int i = 0; i < 50; i++)
-        {
-          emitter.read();
-          if (emitter.raw_val)
-          {
-            kicker.execute = true;
-            kicker.handle();
-            break;
-          }
-          delay(10);
-        }
-        motor.speed = 0;
-        motor.dribble(0);
-        emitter.capture_tm = 0;
-      }
-      else if (emitter.ready_for_turn)
-      {
-        motor.correction = constrain(turn * 1.5, -30, 30);
-        motor.speed = 0;
-        motor.direction = 0;
-        motor.run();
-        motor.dribble(255);
-      }
-      else
-      {
-        motor.correction = 0;
-        motor.speed = 0;
-        motor.direction = 0;
-        motor.run();
-        motor.dribble(150);
-      }
-    }
-    else if (ball.lst_tm_visible + 500 > tm)
-    {
-      motor.correction = ball.getTurn(50);
-      // motor.direction = ball.turn_angle;
-      motor.direction = 0;
-      motor.speed = ball.distance < 60 ? 50 : 150;
-      motor.dribble(ball.distance < 60 ? 150 : 0);
+      robot.speed = 100;
+      robot.direction = ball.angle;
+      robot.angle = ball.angle;
     }
     else
     {
-      motor.correction = gyro.turn;
-      motor.direction = 0;
-      motor.speed = 0;
-      motor.dribble(0);
+      robot.speed = 0;
+      robot.direction = 0;
+      robot.angle = 0;
     }
   }
-  else // goalkeeper -------------------------------------------------------------------------------
+  else
   {
-    Object goal = GOAL ? yellow_goal : blue_goal;
-
-    // if (ball.lst_tm_visible + 500 > tm)
-    // {
-    //   motor.direction = ball.turn_angle > 0 ? 90 : -90;
-    //   motor.speed = abs(ball.turn_angle) < 10 ? 100 : 200;
-    //   motor.dribble(0);
-    // }
-    // else
-    // {
-    //   motor.direction = 0;
-    //   motor.dribble(0);
-    // }
-
-    double x_speed = 0;
-    double y_speed = 0;
+    if (ball.is_visible(1000))
+    {
+      // robot.set_speed_limit(255);
+      robot.move_coord(sin(ball.angle / 180.0 * M_PI) * 30, back_goal.y + 30, ball.angle);
+    }
+    else
+    {
+      // robot.set_speed_limit(100);
+      robot.move_coord(0, back_goal.y + 30, 0);
+    }
   }
 
-  motor.run();
-  // delay(((unsigned long long)tm - main_start_time) < main_delay ? main_delay - ((unsigned long long)tm - main_start_time) : 0);
-  delay(10);
+  pixels.show();
+  robot.move();
+
+  logging();
+  delay_fps(100);
+}
+
+void logging()
+{
+  Serial.print(back_goal.is_visible(500));
+  Serial.print(" ");
+  Serial.print(back_goal.angle);
+  Serial.print(" ");
+  Serial.print(back_goal.distance);
+  Serial.print(" ");
+  Serial.print(robot.x);
+  Serial.print(" ");
+  Serial.print(robot.y);
+  Serial.print(" ");
+  Serial.print(get_coord_direction(robot.x, robot.y, 0, -90));
+  Serial.print(" ");
+  Serial.println();
 }
