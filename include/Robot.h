@@ -5,18 +5,29 @@
 #include "Sensors/Buttons.h"
 #include "Sensors/Camera.h"
 #include "Sensors/Dribbling.h"
+#include "Sensors/Line.h"
+#include "Sensors/Emitter.h"
+#include "Sensors/Bluetooth.h"
 #include "Modules/Object.h"
+#include "Sensors/Kicker.h"
+#include "Modules/Robot2.h"
 
 Adafruit_NeoPixel pixels(4, 33, NEO_GRB + NEO_KHZ800);
+Bluetooth bluetooth;
 Gyro gyro;
 Motor motor;
 Dribbling dribbling;
 Buttons buttons;
 Camera camera;
+Line line;
+Emitter emitter;
+Kicker kicker;
 
 Object ball;
 Object front_goal(0, 115);
 Object back_goal(0, -115);
+
+Robot2 robot2;
 
 class Robot
 {
@@ -26,6 +37,7 @@ public:
   void move();
 
   void move_coord(double, double, double);
+  bool reached_coord = false;
 
   void set_speed_limit(double);
   void cancel_speed_limit();
@@ -34,14 +46,18 @@ public:
   void set_direction_limit(double);
   void cancel_direction_limit();
 
+  bool is_coord_updated(int = 0);
+
   double direction = 0;
   double speed = 0;
   double angle = 0;
 
+  bool on_line = false;
+
   double x = 0, y = 0;
   bool update_coord = false;
 
-private:
+private:  
   int num_pixels = 4;
   int pin_pixels = 33;
 
@@ -54,6 +70,8 @@ private:
 
   double lst_relative_angle = 0;
   double relative_angle = 0;
+
+  uint64_t update_tm = 0;
 };
 
 Robot robot;

@@ -28,8 +28,8 @@ void Dribbling::run()
 {
   if (flag)
   {
-    analogWrite(PIN[0], speed);
-    analogWrite(PIN[1], 0);
+    analogWrite(PIN[0], ROBOT ? speed : 0);
+    analogWrite(PIN[1], ROBOT ? 0 : speed);
   }
   else
   {

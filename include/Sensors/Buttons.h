@@ -4,14 +4,11 @@ class Buttons
 {
 private:
   int pin[4] = {A0, A1, A2, A3};
-  bool press_flag[4] = {0, 0, 0, 0};
-  bool stop[4] = {1, 0, 0, 0};
-  // Motor &motor;
-  // Kicker &kicker;
+  uint64_t press_tm[4] = {};
 public:
-  // Buttons(Motor &motor, Kicker &kicker): motor(motor), kicker(kicker) {}
   bool val[4] = {0, 0, 0, 0};
-  bool press[4] = {0, 0, 0, 0};
+  bool short_press[4] = {0, 0, 0, 0};
+  bool long_press[4] = {0, 0, 0, 0};
   void init();
   void read();
   void setStop(int n);
@@ -31,41 +28,22 @@ void Buttons::read()
 {
   for (int i = 0; i < 4; i++)
   {
+    short_press[i] = 0;
+    long_press[i] = 0;
+
     val[i] = digitalRead(pin[i]);
 
-    if (val[i])
+    if (val[i] && !press_tm[i])
     {
-      if (!press_flag[i])
-      {
-        press_flag[i] = 1;
-        press[i] = 1;
-      }
-      else
-      {
-        press[i] = 0;
-      }
+      press_tm[i] = millis();
     }
-    else
+    if (!val[i] && press_tm[i])
     {
-      press_flag[i] = 0;
-      press[i] = 0;
+      if (millis() - press_tm[i] < 500)
+        short_press[i] = 1;
+      else
+        long_press[i] = 1;
+      press_tm[i] = 0;
     }
   }
-
-  // if (press[0])
-  //   motor.stop_flag = !motor.stop_flag;
-
-  // if (press[1])
-  //   motor.stop_dribble = !motor.stop_dribble;
-  
-  // if (press[2])
-  //   kicker.forse_kick();
-  
-  // if (press[3])
-  // {
-  //   kicker.begin_if_null = !kicker.begin_if_null;
-  //   if (!kicker.begin_if_null)
-  //     kicker.current_state = 0;
-  // }
-  
 }

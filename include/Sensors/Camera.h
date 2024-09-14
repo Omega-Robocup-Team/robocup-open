@@ -9,7 +9,7 @@ private:
 public:
   void init();
   void read();
-  int data[10];
+  int data[26];
   bool update = false;
   bool flag = true;
 };
@@ -40,7 +40,11 @@ void Camera::read()
         SPI1.transfer(&data[i * 3 + 1], 2);
         SPI1.transfer(&data[i * 3 + 2], 2);
       }
-      SPI1.transfer(&data[9], 1);
+      for (int i = 0; i < 16; i++)
+      {
+        SPI1.transfer(&data[9 + i], 1);
+      }
+      SPI1.transfer(&data[25], 1);
       this->update = true;
     }
     

@@ -6,20 +6,31 @@
 ThreadWrap(Serial, SerialXtra);
 #define Serial ThreadClone(SerialXtra)
 
-int thread_id = 0, start_n = 0;
+int thread_id = 0;
+void * thread_func = 0;
 bool thread_flag = false;
 
 uint64_t fps_tm = 0;
 
-void start(void *func, int n = 0)
+void stop_current_thread()
 {
-  if (start_n == n)
+  if (thread_flag)
   {
-    if (threads.getState(thread_id) != threads.RUNNING || !thread_flag)
+    if (threads.getState(thread_id) == threads.RUNNING)
     {
-      thread_id = threads.addThread((ThreadFunction)func);
-      thread_flag = true;
+      threads.kill(thread_id);
     }
+  }
+}
+
+void start(void *func)
+{
+  if (thread_func != func || !thread_flag)
+  {
+    stop_current_thread();
+    thread_func = func;
+    thread_flag = true;
+    thread_id = threads.addThread((ThreadFunction)func);
   }
 }
 
@@ -50,10 +61,14 @@ int delay_fps(float fps)
   return res;
 }
 
-void get_coord(double *x, double *y, double angle, double dist, double ref_x, double ref_y)
+double get_x_coord(double angle, double dist, double ref_x, double ref_y)
 {
-  *x = ref_x - dist * sin(angle / 180.0 * M_PI);
-  *y = ref_y - dist * cos(angle / 180.0 * M_PI);
+  return ref_x - dist * sin(angle / 180.0 * M_PI);
+}
+
+double get_y_coord(double angle, double dist, double ref_x, double ref_y)
+{
+  return ref_y - dist * cos(angle / 180.0 * M_PI);
 }
 
 double get_coord_direction(double x1, double y1, double x2, double y2)
@@ -64,4 +79,10 @@ double get_coord_direction(double x1, double y1, double x2, double y2)
 double get_coord_dist(double x1, double y1, double x2, double y2)
 {
   return sqrt(pow(x2 - x1, 2) + pow(y2 - y1, 2));
+}
+
+int get_sign(double angle)
+{
+  if (!angle) return 1;
+  return abs(angle) / angle;
 }
