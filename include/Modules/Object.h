@@ -42,7 +42,10 @@ void Object::update(int id, int angle, int dist, double gyro_angle)
       // else
       //   distance = constrain(pow(1.05651, dist) + 7.03967, 0, 200);
 
-      distance = constrain(576.785 / abs(96.1323 - dist), 0, 200);
+      if (is_goal)
+        distance = constrain(723.415 / abs(100.89 - dist) + 9, 0, 200);
+      else
+        distance = constrain(1265.17 / abs(105.287 - dist) - 2.22865, 0, 200);
 
       this->angle = relative_angle + gyro_angle;
       this->angle = trim(this->angle);

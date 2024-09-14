@@ -160,19 +160,6 @@ void Robot::read()
     line.calculate(gyro.angle);
   }
 
-  Serial.print(line.visible);
-  Serial.print(" ");
-  Serial.print(line.angle);
-  Serial.print("\t");
-  Serial.print(line.distance);
-  Serial.print("\t");
-  for (int i = 0; i < 16; i++)
-  {
-    Serial.print(camera.data[9+i]);
-    Serial.print(" ");
-  }
-  Serial.println();
-
   // if (bluetooth.new_data)
   // {
   //   robot2.role = bluetooth.data[0];

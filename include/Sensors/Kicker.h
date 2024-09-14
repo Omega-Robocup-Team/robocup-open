@@ -49,7 +49,7 @@ void Kicker::handle() // если цикл удара был поставлен 
     digitalWrite(kick_pin, 0);
     digitalWrite(retr_pin, 0);
     digitalWrite(chrg_pin, 1);
-    if (getChrg() > 90)
+    if (getChrg() > 60)
     {
       // Serial.println("AAAA");
       current_state = 2;
@@ -62,7 +62,7 @@ void Kicker::handle() // если цикл удара был поставлен 
     digitalWrite(retr_pin, 0);
     digitalWrite(chrg_pin, 0);
   }
-  if ((current_state == 2) && (getChrg() < 90))
+  if ((current_state == 2) && (getChrg() < 55))
   {
     // Serial.println("aoaooa");
     current_state = 1;

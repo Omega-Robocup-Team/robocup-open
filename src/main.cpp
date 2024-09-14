@@ -1,5 +1,5 @@
 bool ROBOT = 0; // 0 - goalkeeper, 1 - forward (номер робота)
-bool GOAL = 0;  // 0 - blue, 1 - yellow (ворота в которые мы играем)
+bool GOAL = 1;  // 0 - blue, 1 - yellow (ворота в которые мы играем)
 bool ROLE = 0;  // 0 - goalkeeper, 1 - forward (роль игрока)
 
 #include <Arduino.h>
@@ -10,7 +10,7 @@ bool ROLE = 0;  // 0 - goalkeeper, 1 - forward (роль игрока)
 
 void logging(), serial_commands();
 
-bool keeping_ball_tm = 0;
+uint64_t keeping_ball_tm = 0;
 double dir = 0;
 
 void setup()
@@ -29,6 +29,8 @@ void loop()
 {
   robot.read();
 
+  Serial.println(ball.distance);
+
   if (line.visible)
   {
     pixels.setPixelColor(2, pixels.Color(30, 30, 30));
@@ -44,29 +46,40 @@ void loop()
     pixels.setPixelColor(2, pixels.Color(0, 0, 0));
     if (ball.is_visible(500))
     {
-      dribbling.speed = 255;
+      dribbling.speed = 0;
       robot.set_speed_limit(150);
       robot.set_turn_speed_limit(100);
 
       robot.speed = ball.distance * 7;
-      if (abs(min_angle(gyro.angle, ball.angle)) < 20 && abs(min_angle(gyro.angle, front_goal.angle)) < 20)
+      if (abs(min_angle(gyro.angle, ball.angle)) < 30 && abs(min_angle(gyro.angle, front_goal.angle)) < 30)
       {
+        dribbling.speed = 255;
         robot.angle = (min_angle(0, ball.angle) + min_angle(0, front_goal.angle)) / 2;
         robot.direction = ball.angle;
-        if (ball.distance > 9)
+        // if (ball.distance > 9)
+        // {
+        //   keeping_ball_tm = 0;
+        //   kicker.execute = false;
+        // }
+        // if (!keeping_ball_tm)
+        //   keeping_ball_tm = millis();
+        // if (millis() - keeping_ball_tm > 1000)
+        if (emitter.val)
         {
-          keeping_ball_tm = 0;
-          kicker.execute = false;
-        }
-        if (!keeping_ball_tm)
-          keeping_ball_tm = millis();
-        if (millis() - keeping_ball_tm > 2000)
           kicker.execute = true;
+          kicker.handle();
+          emitter.reset();
+          for (int i = 0; i < 4; i++)
+            pixels.setPixelColor(i, pixels.Color(30, 30, 30));
+          pixels.show();
+          delay(100);
+          pixels.clear();
+        }
       }
       else
       {
         robot.angle = ball.angle;
-        robot.direction = max(0, 30 - ball.distance) / 25 * 90 * -get_sign(min_angle(gyro.angle, front_goal.angle)) + gyro.angle;
+        robot.direction = max(0, 40 - ball.distance) / 25 * 90 * -get_sign(min_angle(gyro.angle, front_goal.angle)) + gyro.angle;
         keeping_ball_tm = 0;
         kicker.execute = false;
       }
@@ -82,7 +95,7 @@ void loop()
   else
   {
     pixels.setPixelColor(2, pixels.Color(0, 0, 0));
-    double goal_dist = 55;
+    double goal_dist = 50;
     if (ball.is_visible(500))
     {
       dribbling.speed = 0;
@@ -93,6 +106,38 @@ void loop()
         robot.move_coord(constrain(tan(radians(angle)) * goal_dist, -goal_dist, goal_dist), back_goal.y + goal_dist, ball.angle);
       else
         robot.move_coord(goal_dist * get_sign(angle), back_goal.y + goal_dist, ball.angle);
+
+      // if (ball.distance > 30) // охранять ворота
+      // {
+      // }
+      // else // идти в атаку
+      // {
+      //   robot.set_speed_limit(150);
+      //   robot.set_turn_speed_limit(100);
+      //   if (abs(min_angle(gyro.angle, ball.angle)) < 20 && abs(min_angle(gyro.angle, front_goal.angle)) < 20)
+      //   {
+      //     robot.angle = (min_angle(0, ball.angle) + min_angle(0, front_goal.angle)) / 2;
+      //     robot.direction = ball.angle;
+      //     if (emitter.val)
+      //     {
+      //       kicker.execute = true;
+      //       kicker.handle();
+      //       emitter.reset();
+      //       for (int i = 0; i < 4; i++)
+      //         pixels.setPixelColor(i, pixels.Color(30, 30, 30));
+      //       pixels.show();
+      //       delay(100);
+      //       pixels.clear();
+      //     }
+      //   }
+      //   else
+      //   {
+      //     robot.angle = ball.angle;
+      //     robot.direction = max(0, 30 - ball.distance) / 25 * 90 * -get_sign(min_angle(gyro.angle, front_goal.angle)) + gyro.angle;
+      //     keeping_ball_tm = 0;
+      //     kicker.execute = false;
+      //   }
+      // }
       
     }
     else
